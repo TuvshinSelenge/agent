@@ -64,8 +64,11 @@ class Orchestrator:
             if scoring.is_relevant(project):
                 scored.append(project)
 
-        scored = dedup.dedupe(scored)
+        # Apply the 24h window BEFORE dedup: otherwise an out-of-window duplicate
+        # with a higher score could be kept and then dropped by the window filter,
+        # discarding a valid in-window update that shares its fingerprint.
         scored = [p for p in scored if self._within_window(p.finding)]
+        scored = dedup.dedupe(scored)
         scored = [p for p in scored if not self.state.is_seen(p.fingerprint)]
 
         for project in scored:
@@ -83,7 +86,16 @@ class Orchestrator:
         )
 
         if persist_state:
-            self.state.mark_seen([p.fingerprint for p in scored])
-            self.state.save()
+            self.commit_seen(report)
 
         return report
+
+    def commit_seen(self, report: RunReport) -> None:
+        """Mark the report's projects as seen and persist state.
+
+        Call this only AFTER the report has been delivered successfully (written
+        and/or e-mailed), so a delivery failure does not silently drop leads from
+        every future run.
+        """
+        self.state.mark_seen([p.fingerprint for p in report.projects])
+        self.state.save()

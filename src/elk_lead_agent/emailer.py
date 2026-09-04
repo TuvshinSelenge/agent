@@ -22,7 +22,7 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 from email.message import EmailMessage
 
-from jinja2 import Template
+from jinja2 import Environment
 
 from .config import Config
 from .models import Potential, RunReport
@@ -82,7 +82,8 @@ def _report_link(config: Config) -> str | None:
     return f"{base.rstrip('/')}/{config.email.report_filename}"
 
 
-_EMAIL_TEMPLATE = Template(
+_JINJA = Environment(autoescape=True)
+_EMAIL_TEMPLATE = _JINJA.from_string(
     """<div style="font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
      max-width:720px;margin:0 auto;color:#1a1a1a;">
   <div style="background:#0b5;color:#fff;padding:18px 22px;border-radius:8px 8px 0 0;">

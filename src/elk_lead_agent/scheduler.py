@@ -8,6 +8,7 @@ from pathlib import Path
 from apscheduler.schedulers.blocking import BlockingScheduler
 from apscheduler.triggers.cron import CronTrigger
 
+from .config import load_config
 from .orchestrator import Orchestrator
 from .report import render_console
 from .runner import write_outputs
@@ -27,8 +28,9 @@ def run_daily(
 
     @scheduler.scheduled_job(CronTrigger(hour=hour, minute=minute))
     def _job() -> None:  # pragma: no cover - exercised via manual/integration runs
-        orchestrator = Orchestrator()
-        report = orchestrator.run()
+        orchestrator = Orchestrator(config=load_config(config_path))
+        # Persist "seen" only after outputs + e-mail succeed.
+        report = orchestrator.run(persist_state=False)
         render_console(report)
         write_outputs(report, output_dir)
         if email:
@@ -38,6 +40,7 @@ def run_daily(
             if to:
                 settings.recipients = tuple(r.strip() for r in to.split(",") if r.strip())
             send_report_email(report, orchestrator.config, settings=settings)
+        orchestrator.commit_seen(report)
         if on_run:
             on_run()
 

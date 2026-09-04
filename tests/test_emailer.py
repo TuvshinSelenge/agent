@@ -80,3 +80,20 @@ def test_send_with_injected_transport(config):
 def test_send_raises_without_config(config):
     with pytest.raises(EmailNotConfiguredError):
         send_report_email(_report(config), config, settings=EmailSettings())
+
+
+def test_email_html_escapes_source_values(config):
+    f = RawFinding(
+        source_name="ANKÖ",
+        source_type=SourceType.TENDER,
+        title="<img src=x onerror=alert(1)> Mitarbeiterquartier Holzbau",
+        status="Vor Einreichung",
+        url="http://example/lead",
+        volume_eur=5_000_000,
+        investor="UBM",
+    )
+    p = enrich(scoring.analyze(f, config), config)
+    report = RunReport(threshold_lead=config.threshold_lead, projects=[p])
+    html = emailer.render_email_html(report, config)
+    assert "<img src=x onerror=alert(1)>" not in html
+    assert "&lt;img" in html

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from jinja2 import Template
+from jinja2 import Environment
 from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
@@ -151,7 +151,10 @@ def to_markdown(report: RunReport) -> str:
 # --------------------------------------------------------------------------- #
 # HTML
 # --------------------------------------------------------------------------- #
-_HTML_TEMPLATE = Template(
+# autoescape=True: source-controlled values (title, location, url, ...) are
+# escaped, so a malicious title cannot inject markup/script into the report.
+_JINJA = Environment(autoescape=True)
+_HTML_TEMPLATE = _JINJA.from_string(
     """<!doctype html>
 <html lang="de">
 <head>

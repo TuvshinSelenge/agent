@@ -11,7 +11,9 @@ is installed. Intended to be exposed on a port the user can reach.
 
 from __future__ import annotations
 
+import hmac
 import html
+import os
 import urllib.parse
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -48,10 +50,12 @@ _PAGE = """<!doctype html>
   </header>
   <div class="bar">
     <form method="post" action="/run" onsubmit="lock(this)">
+      {token_field}
       <button class="secondary" type="submit">🔄 Jetzt aktualisieren</button>
     </form>
     <form method="post" action="/run" onsubmit="lock(this)">
       <input type="hidden" name="email" value="1">
+      {token_field}
       <button class="primary" type="submit">📧 Aktualisieren &amp; per E-Mail senden</button>
     </form>
     <span style="color:#666;font-size:13px;">Empfänger: {recipients}</span>
@@ -68,10 +72,11 @@ _PAGE = """<!doctype html>
 
 
 class LeadAgentServer(ThreadingHTTPServer):
-    def __init__(self, addr, handler, *, config: Config, output_dir: Path):
+    def __init__(self, addr, handler, *, config: Config, output_dir: Path, token: str = ""):
         super().__init__(addr, handler)
         self.config = config
         self.output_dir = output_dir
+        self.token = token
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -86,6 +91,31 @@ class Handler(BaseHTTPRequestHandler):
     def out_dir(self) -> Path:
         return self.server.output_dir  # type: ignore[attr-defined]
 
+    @property
+    def token(self) -> str:
+        return self.server.token  # type: ignore[attr-defined]
+
+    def _authorized(self, query: dict, form: dict | None = None) -> bool:
+        """When a token is configured, require it (query, header, or form field)."""
+        if not self.token:
+            return True
+        provided = ""
+        if form and form.get("token"):
+            provided = form["token"][0]
+        elif query.get("token"):
+            provided = query["token"][0]
+        else:
+            provided = self.headers.get("X-Auth-Token", "")
+        return hmac.compare_digest(provided, self.token)
+
+    def _token_qs(self) -> str:
+        return f"&token={urllib.parse.quote(self.token)}" if self.token else ""
+
+    def _token_field(self) -> str:
+        if not self.token:
+            return ""
+        return f'<input type="hidden" name="token" value="{html.escape(self.token)}">'
+
     def _send_html(self, body: str, status: int = 200) -> None:
         data = body.encode("utf-8")
         self.send_response(status)
@@ -97,14 +127,20 @@ class Handler(BaseHTTPRequestHandler):
     def _render_page(self, flash: str = "") -> str:
         report = self.out_dir / "report_latest.html"
         if report.exists():
-            body = f'<iframe src="/report_latest.html?ts={report.stat().st_mtime_ns}"></iframe>'
+            src = f"/report_latest.html?ts={report.stat().st_mtime_ns}{self._token_qs()}"
+            body = f'<iframe src="{src}"></iframe>'
         else:
             body = (
                 '<div class="empty">Noch kein Report vorhanden. '
                 'Klicken Sie auf „Jetzt aktualisieren".</div>'
             )
         recipients = ", ".join(self.cfg.email.recipients) or "(keine konfiguriert)"
-        return _PAGE.format(flash=flash, body=body, recipients=html.escape(recipients))
+        return _PAGE.format(
+            flash=flash,
+            body=body,
+            recipients=html.escape(recipients),
+            token_field=self._token_field(),
+        )
 
     def _flash(self, params: dict[str, list[str]]) -> str:
         if params.get("ok"):
@@ -117,9 +153,12 @@ class Handler(BaseHTTPRequestHandler):
     # ---- routing ----------------------------------------------------------
     def do_GET(self) -> None:  # noqa: N802
         parsed = urllib.parse.urlparse(self.path)
+        params = urllib.parse.parse_qs(parsed.query)
+        if not self._authorized(params):
+            self._send_html("<h1>403</h1><p>Token erforderlich.</p>", status=403)
+            return
         path = parsed.path
         if path in ("/", "/index.html"):
-            params = urllib.parse.parse_qs(parsed.query)
             self._send_html(self._render_page(self._flash(params)))
             return
         self._serve_file(path)
@@ -148,6 +187,10 @@ class Handler(BaseHTTPRequestHandler):
         length = int(self.headers.get("Content-Length", "0") or "0")
         raw = self.rfile.read(length).decode("utf-8") if length else ""
         form = urllib.parse.parse_qs(raw)
+        query = urllib.parse.parse_qs(parsed.query)
+        if not self._authorized(query, form):
+            self._send_html("<h1>403</h1><p>Token erforderlich.</p>", status=403)
+            return
         want_email = bool(form.get("email"))
 
         try:
@@ -159,9 +202,9 @@ class Handler(BaseHTTPRequestHandler):
             if want_email:
                 self._send_email(report)
                 msg += f" E-Mail gesendet an {', '.join(self.cfg.email.recipients)}."
-            self._redirect(f"/?ok={urllib.parse.quote(msg)}")
+            self._redirect(f"/?ok={urllib.parse.quote(msg)}{self._token_qs()}")
         except Exception as exc:  # noqa: BLE001
-            self._redirect(f"/?err={urllib.parse.quote(str(exc))}")
+            self._redirect(f"/?err={urllib.parse.quote(str(exc))}{self._token_qs()}")
 
     def _send_email(self, report) -> None:
         # Imported lazily so the web app also works when SMTP isn't configured.
@@ -183,12 +226,22 @@ def run_web(
     port: int = 8000,
     output_dir: str | Path = "output",
     config_path: str | Path | None = None,
+    token: str | None = None,
 ) -> None:
     config = load_config(config_path)
     out = Path(output_dir)
     out.mkdir(parents=True, exist_ok=True)
-    httpd = LeadAgentServer((host, port), Handler, config=config, output_dir=out)
+    token = token if token is not None else os.getenv("WEB_TOKEN", "")
+    httpd = LeadAgentServer((host, port), Handler, config=config, output_dir=out, token=token)
     print(f"ELK Lead Agent Web-UI: http://{host}:{port}/  (Strg+C zum Beenden)")
+    if token:
+        print("Zugriffsschutz aktiv: Aufruf mit ?token=… erforderlich.")
+    elif host not in ("127.0.0.1", "localhost"):
+        print(
+            "WARNUNG: Kein WEB_TOKEN gesetzt und an alle Interfaces gebunden – "
+            "jeder mit Netzwerkzugriff kann Läufe/E-Mails auslösen. Setzen Sie "
+            "WEB_TOKEN oder binden Sie mit --host 127.0.0.1."
+        )
     try:
         httpd.serve_forever()
     except KeyboardInterrupt:  # pragma: no cover
