@@ -1,0 +1,55 @@
+name: Report-Website (GitHub Pages)
+
+# Veröffentlicht den aktuellen Report als Web-Seite auf GitHub Pages.
+# Kein E-Mail-Versand nötig – einfach die Seite öffnen. Aktualisierung:
+#  - schedule: täglich automatisch
+#  - workflow_dispatch: „Run workflow"-Button (on demand)
+#  - push auf main: bei Code-/Konfig-Änderungen
+on:
+  schedule:
+    - cron: "0 4 * * *"
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install
+        run: pip install -e .
+      - name: Report erzeugen und Seite vorbereiten
+        run: |
+          elk-agent run --no-state
+          mkdir -p _site
+          # index.html = aktueller Report; Auto-Reload alle 15 Minuten, damit
+          # neue Deployments ohne manuelles Neuladen sichtbar werden.
+          sed 's|<head>|<head>\n<meta http-equiv="refresh" content="900">|' \
+            output/report_latest.html > _site/index.html
+          cp output/report_latest.json _site/report.json 2>/dev/null || true
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
