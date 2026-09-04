@@ -1,0 +1,60 @@
+name: Täglicher Lead-Report
+
+# Reliable delivery that does NOT depend on a running Cloud Agent:
+#  - schedule: runs every morning on GitHub's infrastructure
+#  - workflow_dispatch: a manual "Run workflow" button in the Actions tab (on demand)
+on:
+  schedule:
+    # cron is in UTC. 04:00 UTC ≈ 06:00 Europe/Vienna (Sommerzeit / CEST),
+    # bzw. 05:00 im Winter. Bei Bedarf anpassen.
+    - cron: "0 4 * * *"
+  workflow_dispatch:
+    inputs:
+      send_email:
+        description: "Report per E-Mail versenden?"
+        type: boolean
+        default: true
+
+concurrency:
+  group: daily-report
+  cancel-in-progress: false
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install
+        run: pip install -e .
+
+      - name: Report erzeugen und versenden
+        env:
+          SMTP_HOST: ${{ secrets.SMTP_HOST }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          SMTP_USERNAME: ${{ secrets.SMTP_USERNAME }}
+          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+          SMTP_FROM: ${{ secrets.SMTP_FROM }}
+          SMTP_STARTTLS: ${{ secrets.SMTP_STARTTLS }}
+          SMTP_TO: ${{ secrets.SMTP_TO }}
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ inputs.send_email }}" = "false" ]; then
+            echo "Manueller Lauf ohne E-Mail-Versand."
+            elk-agent run --no-state
+          else
+            elk-agent run --no-state --email
+          fi
+
+      - name: Report als Artefakt hochladen
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lead-report
+          path: output/
+          if-no-files-found: ignore
