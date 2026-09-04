@@ -157,7 +157,8 @@ E-Mail-Versand und keine blockierbaren Links nötig.
 
 - **Aktualisierung:** täglich automatisch (cron), bei jedem `push` auf `main`, und on demand über **Actions → „Report-Website (GitHub Pages)" → Run workflow**.
 - Die Seite lädt sich alle 15 Minuten selbst neu, damit neue Stände ohne manuelles Neuladen erscheinen.
-- Kein SMTP/Secrets nötig.
+- Kein SMTP nötig.
+- **Recherche-Agent:** Ist das GitHub-Actions-Secret `OPENAI_API_KEY` gesetzt, liest der Agent echte Quellen (RSS/TED) und lässt ein LLM die relevanten Projekte auswählen/extrahieren – **alle Links sind echt und aufrufbar**. Ohne Key läuft der deterministische Live-Modus (nur echte Feeds). `Settings → Secrets and variables → Actions → OPENAI_API_KEY`.
 
 ### Einmalige Einrichtung
 
