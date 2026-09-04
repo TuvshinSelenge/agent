@@ -27,12 +27,22 @@ class Orchestrator:
         state: StateStore | None = None,
         now: datetime | None = None,
         max_workers: int = 8,
+        live_only: bool = False,
+        agent: bool = False,
+        llm_client=None,
     ):
         self.config = config or load_config()
         self.now = now or datetime.now(UTC)
         self.fixtures = fixtures or FixtureProvider(now=self.now)
         self.state = state if state is not None else StateStore()
         self.max_workers = max_workers
+        # Agent mode reads real sources and uses an LLM to judge relevance/extract
+        # projects; it always fetches live so every link resolves.
+        self.agent = agent
+        self.llm_client = llm_client
+        # When True, only real network sources are used (no fixtures), so every
+        # reported "Link zur Quelle" points at a genuine, resolvable URL.
+        self.live_only = live_only or agent
 
     def _collect_all(self) -> tuple[list[RawFinding], list[str], list[str]]:
         agents = build_agents(self.config, self.fixtures)
@@ -40,7 +50,7 @@ class Orchestrator:
         queried: list[str] = []
         errors: list[str] = []
         with ThreadPoolExecutor(max_workers=self.max_workers) as pool:
-            futures = {pool.submit(a.collect): a for a in agents}
+            futures = {pool.submit(a.collect, self.live_only): a for a in agents}
             for future in as_completed(futures):
                 agent = futures[future]
                 queried.append(agent.name)
@@ -57,12 +67,25 @@ class Orchestrator:
     def run(self, persist_state: bool = True) -> RunReport:
         findings, queried, errors = self._collect_all()
 
-        # Analyst agent: categorize + score, keep only relevant findings.
         scored: list[ScoredProject] = []
-        for finding in findings:
-            project = scoring.analyze(finding, self.config)
-            if scoring.is_relevant(project):
-                scored.append(project)
+        if self.agent:
+            # Research agent: LLM judges relevance and extracts structured projects
+            # from the real fetched candidates (links stay real).
+            from . import research
+            from .llm import OpenAIClient
+
+            client = self.llm_client or OpenAIClient()
+            by_source: dict[str, list[RawFinding]] = {}
+            for f in findings:
+                by_source.setdefault(f.source_name, []).append(f)
+            scored, llm_errors = research.extract_all(by_source, self.config, client)
+            errors.extend(llm_errors)
+        else:
+            # Analyst agent: keyword categorize + score, keep only relevant findings.
+            for finding in findings:
+                project = scoring.analyze(finding, self.config)
+                if scoring.is_relevant(project):
+                    scored.append(project)
 
         # Apply the 24h window BEFORE dedup: otherwise an out-of-window duplicate
         # with a higher score could be kept and then dropped by the window filter,

@@ -70,3 +70,55 @@ def analyze(finding: RawFinding, config: Config) -> ScoredProject:
 def is_relevant(project: ScoredProject) -> bool:
     """A finding is relevant if it maps to at least one target category."""
     return bool(project.categories)
+
+
+def analyze_structured(finding: RawFinding, extracted: dict, config: Config) -> ScoredProject:
+    """Score a finding from LLM-extracted structured fields (agent mode).
+
+    Applies the identical rubric as :func:`analyze`, but the relevance decision,
+    categories and signals come from the model instead of keyword matching. Only
+    category keys that exist in the configuration are accepted.
+    """
+    keys = [k for k in extracted.get("categories", []) if k in config.categories]
+    labels = [config.categories[k].label for k in keys]
+
+    is_timber = bool(extracted.get("timber_or_modular"))
+    is_submission = bool(extracted.get("submission_imminent"))
+    investor = extracted.get("investor") or None
+    volume = extracted.get("volume_eur")
+    if isinstance(volume, str):
+        try:
+            volume = float(volume.replace(".", "").replace(",", "."))
+        except ValueError:
+            volume = None
+    has_volume = isinstance(volume, int | float) and volume > config.volume_threshold_eur
+    is_hotel_or_employee = any(k in config.hotel_or_employee_categories for k in keys)
+
+    if investor and not finding.investor:
+        finding.investor = investor
+    if volume is not None and finding.volume_eur is None:
+        finding.volume_eur = float(volume)
+    if extracted.get("location"):
+        finding.location = str(extracted["location"])
+    if extracted.get("status"):
+        finding.status = str(extracted["status"])
+
+    pts = config.points
+    breakdown = ScoreBreakdown(
+        volume_over_threshold=pts.get("volume_over_threshold", 0) if has_volume else 0,
+        timber_or_modular=pts.get("timber_or_modular", 0) if is_timber else 0,
+        submission_imminent=pts.get("submission_imminent", 0) if is_submission else 0,
+        investor_known=pts.get("investor_known", 0) if investor else 0,
+        hotel_or_employee_housing=pts.get("hotel_or_employee_housing", 0)
+        if is_hotel_or_employee
+        else 0,
+    )
+    return ScoredProject(
+        finding=finding,
+        fingerprint=finding.fingerprint,
+        categories=keys,
+        category_labels=labels,
+        breakdown=breakdown,
+        is_timber_or_modular=is_timber,
+        contact=finding.contact,
+    )
