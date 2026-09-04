@@ -58,6 +58,17 @@ def _build_parser() -> argparse.ArgumentParser:
         default=None,
         help="Empfänger überschreiben (Komma-getrennt). Standard: config email.recipients.",
     )
+    run.add_argument(
+        "--live",
+        action="store_true",
+        help="Nur echte Netzwerkquellen nutzen (keine Fixtures) – alle Links sind real.",
+    )
+    run.add_argument(
+        "--window-hours",
+        type=int,
+        default=None,
+        help="Zeitfenster in Stunden überschreiben (Standard aus config).",
+    )
 
     schedule = sub.add_parser("schedule", help="Täglich zur festen Uhrzeit laufen.")
     schedule.add_argument("--at", default="06:00", help="Uhrzeit HH:MM (Standard 06:00).")
@@ -95,7 +106,10 @@ def _cmd_run(args: argparse.Namespace) -> int:
     if args.reset_state:
         state.reset()
 
-    orchestrator = Orchestrator(config=load_config(args.config), state=state)
+    config = load_config(args.config)
+    if args.window_hours:
+        config.window_hours = args.window_hours
+    orchestrator = Orchestrator(config=config, state=state, live_only=args.live)
     # Do not persist "seen" yet: only mark leads seen after delivery succeeds,
     # so a write/e-mail failure never silently drops them from future runs.
     report = orchestrator.run(persist_state=False)

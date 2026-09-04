@@ -36,6 +36,13 @@ def _fmt_dt(dt: datetime) -> str:
     return dt.strftime("%Y-%m-%d %H:%M UTC")
 
 
+def window_label(hours: int) -> str:
+    """Human-friendly window, e.g. '24 Stunden' or '30 Tagen'."""
+    if hours >= 48 and hours % 24 == 0:
+        return f"{hours // 24} Tagen"
+    return f"{hours} Stunden"
+
+
 # --------------------------------------------------------------------------- #
 # Console
 # --------------------------------------------------------------------------- #
@@ -43,7 +50,7 @@ def render_console(report: RunReport, console: Console | None = None) -> None:
     console = console or Console()
     leads = report.leads
     header = (
-        f"[bold]Neue Projekte der letzten {report.window_hours} Stunden[/bold]\n"
+        f"[bold]Neue Projekte der letzten {window_label(report.window_hours)}[/bold]\n"
         f"Stand: {_fmt_dt(report.generated_at)}  ·  "
         f"{len(report.projects)} Projekte  ·  "
         f"[bold green]{len(leads)} Leads[/bold green] (ab {report.threshold_lead} Punkten)  ·  "
@@ -102,7 +109,7 @@ def _lead_panel(p: ScoredProject) -> Panel:
 # --------------------------------------------------------------------------- #
 def to_markdown(report: RunReport) -> str:
     lines: list[str] = []
-    lines.append(f"# Neue Projekte der letzten {report.window_hours} Stunden")
+    lines.append(f"# Neue Projekte der letzten {window_label(report.window_hours)}")
     lines.append("")
     lines.append(
         f"*Stand: {_fmt_dt(report.generated_at)} · {len(report.projects)} Projekte · "
@@ -179,7 +186,7 @@ _HTML_TEMPLATE = _JINJA.from_string(
 </style>
 </head>
 <body>
-  <h1>Neue Projekte der letzten {{ r.window_hours }} Stunden</h1>
+  <h1>Neue Projekte der letzten {{ window }}</h1>
   <div class="meta">Stand: {{ generated }} · {{ r.projects|length }} Projekte ·
     {{ r.leads|length }} Leads (ab {{ r.threshold_lead }} Punkten) ·
     {{ r.sources_queried|length }} Quellen durchsucht</div>
@@ -234,6 +241,7 @@ def to_html(report: RunReport) -> str:
         r=report,
         generated=_fmt_dt(report.generated_at),
         volume=_volume_label,
+        window=window_label(report.window_hours),
     )
 
 

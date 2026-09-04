@@ -18,6 +18,7 @@ class SourceConfig:
     type: SourceType
     enabled: bool = True
     live: bool = False
+    feed: str | None = None  # RSS/Atom feed URL for press sources (live mode)
 
 
 @dataclass(frozen=True)
@@ -78,6 +79,7 @@ def load_config(path: str | Path | None = None) -> Config:
                 type=SourceType(s["type"]),
                 enabled=bool(s.get("enabled", True)),
                 live=bool(s.get("live", False)),
+                feed=s.get("feed"),
             )
         )
 

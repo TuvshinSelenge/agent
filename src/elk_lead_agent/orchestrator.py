@@ -27,12 +27,16 @@ class Orchestrator:
         state: StateStore | None = None,
         now: datetime | None = None,
         max_workers: int = 8,
+        live_only: bool = False,
     ):
         self.config = config or load_config()
         self.now = now or datetime.now(UTC)
         self.fixtures = fixtures or FixtureProvider(now=self.now)
         self.state = state if state is not None else StateStore()
         self.max_workers = max_workers
+        # When True, only real network sources are used (no fixtures), so every
+        # reported "Link zur Quelle" points at a genuine, resolvable URL.
+        self.live_only = live_only
 
     def _collect_all(self) -> tuple[list[RawFinding], list[str], list[str]]:
         agents = build_agents(self.config, self.fixtures)
@@ -40,7 +44,7 @@ class Orchestrator:
         queried: list[str] = []
         errors: list[str] = []
         with ThreadPoolExecutor(max_workers=self.max_workers) as pool:
-            futures = {pool.submit(a.collect): a for a in agents}
+            futures = {pool.submit(a.collect, self.live_only): a for a in agents}
             for future in as_completed(futures):
                 agent = futures[future]
                 queried.append(agent.name)
