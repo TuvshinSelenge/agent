@@ -1,0 +1,55 @@
+[
+  {
+    "source": "Immobilien Magazin",
+    "type": "press",
+    "title": "Marktbericht: Wohnen auf Zeit boomt in Österreich",
+    "description": "Analyse zum wachsenden Segment Wohnen auf Zeit und Boarding Houses.",
+    "location": "Österreich",
+    "status": "Marktbericht",
+    "url": "https://www.immobilien-magazin.at/markt/wohnen-auf-zeit-boom",
+    "hours_ago": 11
+  },
+  {
+    "source": "Der Standard Immobilien",
+    "type": "press",
+    "title": "Signa-Nachfolger prüft Budgethotel-Portfolio (teils Modulbau)",
+    "description": "Ein Signa-Projektnachfolger prüft ein Portfolio an Budgethotels, teilweise in Modulbau.",
+    "location": "Wien",
+    "status": "Bericht",
+    "url": "https://www.derstandard.at/immobilien/signa-nachfolger-budgethotel",
+    "hours_ago": 13
+  },
+  {
+    "source": "Leadersnet",
+    "type": "press",
+    "title": "Mitarbeiterquartier für Seilbahnbetrieb eröffnet",
+    "description": "Bereits fertiggestelltes Mitarbeiterquartier, Rückblick auf das Projekt.",
+    "location": "Sölden, Tirol",
+    "status": "Eröffnet",
+    "url": "https://www.leadersnet.at/news/mitarbeiterquartier-soelden",
+    "hours_ago": 40,
+    "volume_eur": 3000000
+  },
+  {
+    "source": "Kommunalnet",
+    "type": "press",
+    "title": "Gemeinde beschließt Arbeiterunterkunft in Holzriegelbau",
+    "description": "Gemeinderat beschließt Errichtung einer Arbeiterunterkunft in Holzriegelbau, Einreichung geplant.",
+    "location": "Wörgl, Tirol",
+    "status": "Vor Einreichung",
+    "url": "https://www.kommunalnet.at/news/arbeiterunterkunft-woergl-holzriegel",
+    "hours_ago": 19,
+    "volume_eur": 2500000
+  },
+  {
+    "source": "Der Standard Immobilien",
+    "type": "press",
+    "title": "Value One realisiert Boarding House in Wien",
+    "description": "Bericht über das Boarding-House-Projekt von Value One (Wohnen auf Zeit).",
+    "location": "Wien",
+    "status": "Bericht",
+    "url": "https://www.wien.gv.at/amtsblatt/boarding-house-holzhybrid-2026",
+    "hours_ago": 5,
+    "investor": "Value One"
+  }
+]

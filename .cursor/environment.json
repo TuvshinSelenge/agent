@@ -1,0 +1,10 @@
+{
+  "name": "ELK Lead Agent",
+  "install": "bash scripts/setup.sh",
+  "terminals": [
+    {
+      "name": "lead-agent-scheduler",
+      "command": ".venv/bin/elk-agent schedule --at 06:00"
+    }
+  ]
+}

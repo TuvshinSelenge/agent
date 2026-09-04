@@ -1,0 +1,58 @@
+[
+  {
+    "source": "ANKÖ",
+    "type": "tender",
+    "title": "Neubau Mitarbeiterquartier für Klinikpersonal (Holzmodulbau)",
+    "description": "Errichtung eines Mitarbeiterquartiers mit 120 Einheiten in Holzmodulbauweise für das Pflege- und Klinikpersonal.",
+    "location": "Innsbruck, Tirol",
+    "status": "Vor Einreichung",
+    "url": "https://www.ankoe.at/ausschreibung/mitarbeiterquartier-innsbruck-2026",
+    "hours_ago": 3,
+    "volume_eur": 4200000,
+    "investor": "Tirol Kliniken"
+  },
+  {
+    "source": "TED (EU)",
+    "type": "tender",
+    "title": "Errichtung Studentenwohnheim mit 300 Betten",
+    "description": "EU-weite Ausschreibung für Planung und Errichtung eines Studentenwohnheims.",
+    "location": "Graz, Steiermark",
+    "status": "EU-Ausschreibung",
+    "url": "https://ted.europa.eu/udl?uri=TED:NOTICE:123456-2026",
+    "hours_ago": 8,
+    "volume_eur": 18000000
+  },
+  {
+    "source": "Auftrag.at",
+    "type": "tender",
+    "title": "Generalsanierung Bürogebäude Landhausplatz",
+    "description": "Sanierung eines Verwaltungsgebäudes inkl. Haustechnik. Kein Beherbergungsprojekt.",
+    "location": "Klagenfurt, Kärnten",
+    "status": "Ausschreibung",
+    "url": "https://www.auftrag.at/ausschreibung/buerogebaeude-landhausplatz",
+    "hours_ago": 6,
+    "volume_eur": 5000000
+  },
+  {
+    "source": "Bundesbeschaffung",
+    "type": "tender",
+    "title": "Rahmenvereinbarung Arbeiterunterkünfte in Modulbauweise",
+    "description": "Modulbau-Arbeiterunterkünfte für Bundesbauvorhaben, mehrere Standorte.",
+    "location": "Wien",
+    "status": "Ausschreibung",
+    "url": "https://www.bbg.gv.at/ausschreibung/arbeiterunterkuenfte-modulbau",
+    "hours_ago": 20,
+    "volume_eur": 3500000
+  },
+  {
+    "source": "Landesvergabeportale",
+    "type": "tender",
+    "title": "Beherbergungsbetrieb für Saisonarbeitskräfte",
+    "description": "Errichtung eines Beherbergungsbetriebs für Saisonarbeitskräfte im Tourismus.",
+    "location": "Zell am See, Salzburg",
+    "status": "Vergabe geplant",
+    "url": "https://vergabe.salzburg.at/beherbergung-saison-2026",
+    "hours_ago": 30,
+    "volume_eur": 2800000
+  }
+]
