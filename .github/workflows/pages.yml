@@ -7,7 +7,8 @@ name: Report-Website (GitHub Pages)
 #  - push auf main: bei Code-/Konfig-Änderungen
 on:
   schedule:
-    - cron: "0 4 * * *"
+    # Stündlich -> die Seite ist praktisch immer aktuell, ohne dass man klicken muss.
+    - cron: "0 * * * *"
   workflow_dispatch:
   push:
     branches: [main]
@@ -65,8 +66,8 @@ jobs:
               f'<a href="{run_url}" target="_blank" rel="noopener" '
               'style="background:#fff;color:#0b5;text-decoration:none;padding:7px 14px;'
               'border-radius:6px;font-weight:600;">&#128260; Jetzt aktualisieren</a>'
-              '<span style="opacity:.9;font-size:13px;">&ouml;ffnet GitHub &rarr; '
-              '&bdquo;Run workflow&ldquo;; danach l&auml;dt sich die Seite automatisch neu</span>'
+              '<span style="opacity:.9;font-size:13px;">aktualisiert sich automatisch '
+              '(st&uuml;ndlich, Seite neu alle 15 Min). Button = sofort neu berechnen</span>'
               '</div>'
           )
           html = html.replace("<body>", "<body>\n" + banner, 1)

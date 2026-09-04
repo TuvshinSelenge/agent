@@ -155,8 +155,8 @@ stattdessen als **Web-Seite** veröffentlichen. Der Workflow
 und stellt ihn über **GitHub Pages** bereit – einfach die URL öffnen, kein
 E-Mail-Versand und keine blockierbaren Links nötig.
 
-- **Aktualisierung:** täglich automatisch (cron), bei jedem `push` auf `main`, und on demand über **Actions → „Report-Website (GitHub Pages)" → Run workflow**.
-- Die Seite lädt sich alle 15 Minuten selbst neu, damit neue Stände ohne manuelles Neuladen erscheinen.
+- **Aktualisierung:** **stündlich automatisch** (cron), bei jedem `push` auf `main`, und on demand über **Actions → „Report-Website (GitHub Pages)" → Run workflow**.
+- Die Seite lädt sich alle 15 Minuten selbst neu, damit neue Stände ohne manuelles Neuladen erscheinen. In der Praxis muss man also **gar nicht klicken** – der Button ist nur für „sofort neu berechnen".
 - Kein SMTP nötig.
 - **Recherche-Agent:** Ist das GitHub-Actions-Secret `OPENAI_API_KEY` gesetzt, liest der Agent echte Quellen (RSS/TED) und lässt ein LLM die relevanten Projekte auswählen/extrahieren – **alle Links sind echt und aufrufbar**. Ohne Key läuft der deterministische Live-Modus (nur echte Feeds). `Settings → Secrets and variables → Actions → OPENAI_API_KEY`.
 
