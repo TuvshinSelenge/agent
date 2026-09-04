@@ -52,3 +52,21 @@ def test_irrelevant_finding(config):
 def test_investor_detected_from_text(config):
     p = scoring.analyze(_finding(title="Soravia baut Mitarbeiterquartier"), config)
     assert p.breakdown.investor_known == 10
+
+
+def test_analyze_structured_applies_rubric(config):
+    f = _finding(title="Boarding House", url="http://x/1")
+    extracted = {
+        "categories": ["mitarbeiterquartiere", "not_a_real_key"],
+        "timber_or_modular": True,
+        "submission_imminent": True,
+        "investor": "UBM",
+        "volume_eur": 3_000_000,
+        "location": "Wien",
+        "status": "Vor Einreichung",
+    }
+    p = scoring.analyze_structured(f, extracted, config)
+    assert p.categories == ["mitarbeiterquartiere"]  # invalid key filtered out
+    assert p.score == 100
+    assert p.finding.location == "Wien"
+    assert p.finding.investor == "UBM"

@@ -191,6 +191,25 @@ ELK-Relevanz** sowie in den Lead-Details **Link zur Quelle, Ansprechpartner,
 Projektstand, geschätztes Volumen, ELK-Relevanz und die empfohlene nächste
 Aktion**.
 
+## Recherche-Agent (Tool-Use)
+
+Der Agent kann die Quellen **aktiv durchsuchen** statt nur feste Feeds zu parsen.
+Mit `--agent` bekommt ein LLM zwei Werkzeuge – `web_search` (DuckDuckGo) und
+`fetch_url` – und sucht damit gezielt nach konkreten Projekten in den
+Zielkategorien, öffnet vielversprechende Seiten und extrahiert die Projekte.
+
+```bash
+.venv/bin/elk-agent run --agent            # Tool-Use-Recherche (benötigt OPENAI_API_KEY)
+```
+
+- **Echte Links:** Das Modell darf nur URLs ausgeben, die es über die Tools
+  tatsächlich gesehen hat – erfundene Links werden verworfen.
+- **Modell:** über `OPENAI_MODEL` konfigurierbar (Standard `gpt-5.6-terra`). Für
+  Reasoning-Modelle wird `temperature` weggelassen und bei Tool-Aufrufen
+  `reasoning_effort: "none"` gesetzt.
+- Die GitHub-Pages-/E-Mail-Workflows nutzen automatisch den Agent-Modus, wenn
+  `OPENAI_API_KEY` als Actions-Secret vorhanden ist (sonst Live-Fallback).
+
 ## Tests & Lint
 
 ```bash

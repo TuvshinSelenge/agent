@@ -65,23 +65,19 @@ class Orchestrator:
         return finding.published_at >= cutoff
 
     def run(self, persist_state: bool = True) -> RunReport:
-        findings, queried, errors = self._collect_all()
-
         scored: list[ScoredProject] = []
         if self.agent:
-            # Research agent: LLM judges relevance and extracts structured projects
-            # from the real fetched candidates (links stay real).
-            from . import research
+            # Tool-using research agent: the LLM browses the public sources with
+            # web_search/fetch_url tools and returns projects with real links.
+            from .agent_tools import run_agent
             from .llm import OpenAIClient
 
             client = self.llm_client or OpenAIClient()
-            by_source: dict[str, list[RawFinding]] = {}
-            for f in findings:
-                by_source.setdefault(f.source_name, []).append(f)
-            scored, llm_errors = research.extract_all(by_source, self.config, client)
-            errors.extend(llm_errors)
+            scored, errors = run_agent(self.config, client)
+            queried = ["Web-Recherche (Tool-Use)"]
         else:
             # Analyst agent: keyword categorize + score, keep only relevant findings.
+            findings, queried, errors = self._collect_all()
             for finding in findings:
                 project = scoring.analyze(finding, self.config)
                 if scoring.is_relevant(project):
