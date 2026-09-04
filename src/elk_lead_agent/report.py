@@ -121,8 +121,9 @@ def to_markdown(report: RunReport) -> str:
     lines.append("| --- | --- | --- | ---: | --- | --- | :---: |")
     for p in report.projects:
         lead = "✅" if p.is_lead else ""
+        title = f"[{p.finding.title}]({p.finding.url})" if p.finding.url else p.finding.title
         lines.append(
-            f"| {p.finding.title} | {p.finding.location} | {p.finding.status} | "
+            f"| {title} | {p.finding.location} | {p.finding.status} | "
             f"{p.score} | {p.potential.value} | {p.elk_relevance.value} | {lead} |"
         )
     lines.append("")
@@ -199,7 +200,7 @@ _HTML_TEMPLATE = _JINJA.from_string(
     <tbody>
     {% for p in r.projects %}
       <tr class="{{ 'lead' if p.is_lead else '' }}">
-        <td>{{ p.finding.title }}</td>
+        <td>{% if p.finding.url %}<a href="{{ p.finding.url }}" target="_blank" rel="noopener">{{ p.finding.title }}</a>{% else %}{{ p.finding.title }}{% endif %}</td>
         <td>{{ p.finding.location }}</td>
         <td>{{ p.finding.status }}</td>
         <td style="text-align:right">{{ p.score }}</td>
