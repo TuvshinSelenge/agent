@@ -4,7 +4,12 @@
   "terminals": [
     {
       "name": "lead-agent-scheduler",
-      "command": ".venv/bin/elk-agent schedule --at 06:00"
+      "command": ".venv/bin/elk-agent schedule --at 06:00 --email"
+    },
+    {
+      "name": "report-server",
+      "command": ".venv/bin/elk-agent serve --port 8000"
     }
-  ]
+  ],
+  "ports": [8000]
 }
