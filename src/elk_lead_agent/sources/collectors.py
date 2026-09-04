@@ -7,6 +7,8 @@ deterministic while leaving a clean extension point for real integrations.
 
 from __future__ import annotations
 
+from datetime import UTC, datetime
+
 import httpx
 
 from ..config import Config, SourceConfig
@@ -42,17 +44,21 @@ class TenderAgent(SourceAgent):
         findings: list[RawFinding] = []
         for notice in data.get("notices", []):
             title = _first(notice.get("TI")) or "TED-Ausschreibung"
-            findings.append(
-                RawFinding(
-                    source_name=self.source.name,
-                    source_type=SourceType.TENDER,
-                    title=title,
-                    description=_first(notice.get("TW")) or "",
-                    location=_first(notice.get("TW")) or "Österreich",
-                    status="EU-Ausschreibung",
-                    url=f"https://ted.europa.eu/udl?uri=TED:NOTICE:{_first(notice.get('ND'))}",
-                )
-            )
+            published = _parse_ted_date(_first(notice.get("PD")))
+            kwargs = {
+                "source_name": self.source.name,
+                "source_type": SourceType.TENDER,
+                "title": title,
+                "description": _first(notice.get("TW")) or "",
+                "location": _first(notice.get("TW")) or "Österreich",
+                "status": "EU-Ausschreibung",
+                "url": f"https://ted.europa.eu/udl?uri=TED:NOTICE:{_first(notice.get('ND'))}",
+            }
+            # Only override the default (fetch time) when a real date is available,
+            # so the 24h window does not treat old notices as freshly published.
+            if published is not None:
+                kwargs["published_at"] = published
+            findings.append(RawFinding(**kwargs))
         return findings
 
 
@@ -102,6 +108,26 @@ def build_agent(
 
 def build_agents(config: Config, fixtures: FixtureProvider) -> list[SourceAgent]:
     return [build_agent(s, config, fixtures) for s in config.enabled_sources]
+
+
+def _parse_ted_date(value) -> datetime | None:
+    """Parse a TED publication date (``PD``) into an aware UTC datetime.
+
+    TED publishes dates as ``YYYYMMDD`` or ISO-8601; return None on anything else.
+    """
+    if not value:
+        return None
+    text = str(value).strip()
+    for fmt in ("%Y%m%d", "%Y-%m-%d"):
+        try:
+            return datetime.strptime(text, fmt).replace(tzinfo=UTC)
+        except ValueError:
+            continue
+    try:
+        dt = datetime.fromisoformat(text)
+        return dt if dt.tzinfo else dt.replace(tzinfo=UTC)
+    except ValueError:
+        return None
 
 
 def _first(value):

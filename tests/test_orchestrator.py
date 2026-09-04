@@ -93,3 +93,50 @@ def test_orchestrator_dedup_state_marks_seen(tmp_path):
     )
     second = orch2.run()
     assert len(second.projects) == 0
+
+
+def test_run_without_persist_does_not_mark_seen(tmp_path):
+    state_path = tmp_path / "seen.json"
+    fixture_dir = write_fixtures(tmp_path / "fixtures", _entries())
+    fixtures = FixtureProvider(fixture_dir=fixture_dir, now=NOW)
+    orch = Orchestrator(
+        config=load_config(), fixtures=fixtures, state=StateStore(path=state_path), now=NOW
+    )
+    report = orch.run(persist_state=False)
+    assert not state_path.exists()  # nothing persisted yet
+
+    orch.commit_seen(report)  # simulate "after successful delivery"
+    assert state_path.exists()
+
+
+def test_window_applied_before_dedup(tmp_path):
+    # Two findings share a fingerprint (same URL): an older, higher-scoring one
+    # (out of window) and a newer, lower-scoring one (in window). The in-window
+    # update must survive.
+    entries = [
+        {
+            "source": "ANKÖ",
+            "type": "tender",
+            "title": "Mitarbeiterquartier Holzbau",  # timber -> higher score
+            "status": "Vor Einreichung",
+            "url": "http://x/dup",
+            "hours_ago": 48,
+            "volume_eur": 5_000_000,
+            "investor": "UBM",
+        },
+        {
+            "source": "ANKÖ",
+            "type": "tender",
+            "title": "Mitarbeiterquartier",  # no timber -> lower score
+            "status": "Ausschreibung",
+            "url": "http://x/dup",
+            "hours_ago": 2,
+        },
+    ]
+    fixtures = FixtureProvider(fixture_dir=write_fixtures(tmp_path / "fixtures", entries), now=NOW)
+    orch = Orchestrator(
+        config=load_config(), fixtures=fixtures, state=StateStore(enabled=False), now=NOW
+    )
+    report = orch.run(persist_state=False)
+    assert len(report.projects) == 1
+    assert report.projects[0].finding.title == "Mitarbeiterquartier"

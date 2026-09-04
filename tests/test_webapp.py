@@ -5,8 +5,10 @@ from elk_lead_agent.config import load_config
 from elk_lead_agent.webapp import Handler, LeadAgentServer
 
 
-def _server(tmp_path):
-    srv = LeadAgentServer(("127.0.0.1", 0), Handler, config=load_config(), output_dir=tmp_path)
+def _server(tmp_path, token=""):
+    srv = LeadAgentServer(
+        ("127.0.0.1", 0), Handler, config=load_config(), output_dir=tmp_path, token=token
+    )
     thread = threading.Thread(target=srv.serve_forever, daemon=True)
     thread.start()
     return srv, srv.server_address[1]
@@ -66,5 +68,38 @@ def test_post_run_email_without_smtp_redirects_error(tmp_path, monkeypatch):
         resp.read()
         assert resp.status == 303
         assert "/?err=" in resp.getheader("Location")
+    finally:
+        srv.shutdown()
+
+
+def test_token_gate_blocks_unauthorized(tmp_path):
+    srv, port = _server(tmp_path, token="s3cret")
+    try:
+        conn = http.client.HTTPConnection("127.0.0.1", port)
+        # No token -> 403 on both GET and POST.
+        conn.request("GET", "/")
+        assert conn.getresponse().status == 403
+        conn.request("POST", "/run", body="", headers={"Content-Length": "0"})
+        r = conn.getresponse()
+        r.read()
+        assert r.status == 403
+
+        # With the right token -> allowed.
+        conn.request("GET", "/?token=s3cret")
+        assert conn.getresponse().status == 200
+        body = "token=s3cret"
+        conn.request(
+            "POST",
+            "/run",
+            body=body,
+            headers={
+                "Content-Type": "application/x-www-form-urlencoded",
+                "Content-Length": str(len(body)),
+            },
+        )
+        r2 = conn.getresponse()
+        r2.read()
+        assert r2.status == 303
+        assert "/?ok=" in r2.getheader("Location")
     finally:
         srv.shutdown()

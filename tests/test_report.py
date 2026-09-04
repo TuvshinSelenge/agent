@@ -46,3 +46,20 @@ def test_console_renders(config):
 
     console = Console(file=open("/dev/null", "w"), force_terminal=False)
     report_mod.render_console(_report(config), console)
+
+
+def test_html_escapes_source_controlled_values(config):
+    f = RawFinding(
+        source_name="ANKÖ",
+        source_type=SourceType.TENDER,
+        title="<script>alert('xss')</script> Mitarbeiterquartier Holzbau",
+        status="Vor Einreichung",
+        url="http://example/lead",
+        volume_eur=5_000_000,
+        investor="UBM",
+    )
+    p = enrich(scoring.analyze(f, config), config)
+    report = RunReport(threshold_lead=config.threshold_lead, projects=[p])
+    html = report_mod.to_html(report)
+    assert "<script>alert('xss')</script>" not in html
+    assert "&lt;script&gt;" in html

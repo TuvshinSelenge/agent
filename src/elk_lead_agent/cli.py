@@ -79,6 +79,11 @@ def _build_parser() -> argparse.ArgumentParser:
     web.add_argument("--port", type=int, default=8000)
     web.add_argument("--output-dir", default="output")
     web.add_argument("--config", default=None)
+    web.add_argument(
+        "--token",
+        default=None,
+        help="Zugriffs-Token; sonst aus WEB_TOKEN. Schützt /run vor unbefugtem Auslösen.",
+    )
 
     sub.add_parser("sources", help="Konfigurierte Quellen auflisten.")
     return parser
@@ -91,7 +96,9 @@ def _cmd_run(args: argparse.Namespace) -> int:
         state.reset()
 
     orchestrator = Orchestrator(config=load_config(args.config), state=state)
-    report = orchestrator.run(persist_state=not args.no_state)
+    # Do not persist "seen" yet: only mark leads seen after delivery succeeds,
+    # so a write/e-mail failure never silently drops them from future runs.
+    report = orchestrator.run(persist_state=False)
 
     if args.format == "console":
         render_console(report, console)
@@ -108,9 +115,16 @@ def _cmd_run(args: argparse.Namespace) -> int:
                 f"{paths['latest_html']}[/dim]"
             )
 
+    email_rc = 0
     if args.email:
-        return _send_email(report, orchestrator.config, console, args.to)
-    return 0
+        email_rc = _send_email(report, orchestrator.config, console, args.to)
+        if email_rc != 0:
+            # Delivery failed: leave state untouched so these leads reappear next run.
+            return email_rc
+
+    if not args.no_state:
+        orchestrator.commit_seen(report)
+    return email_rc
 
 
 def _send_email(report, config, console: Console, to: str | None) -> int:
@@ -170,6 +184,7 @@ def _cmd_web(args: argparse.Namespace) -> int:
         port=args.port,
         output_dir=args.output_dir,
         config_path=args.config,
+        token=args.token,
     )
     return 0
 
