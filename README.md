@@ -147,6 +147,28 @@ In der Cloud-Agent-Umgebung läuft diese Web-UI automatisch als Terminal
 `lead-agent-web` auf Port `8000` – einfach die Seite öffnen und den Button
 klicken, um jederzeit den aktuellen Stand per Mail zu bekommen.
 
+## Report als Website (GitHub Pages) – ohne E-Mail
+
+Wenn E-Mails im Postfach blockiert/quarantänisiert werden, lässt sich der Report
+stattdessen als **Web-Seite** veröffentlichen. Der Workflow
+[`.github/workflows/pages.yml`](.github/workflows/pages.yml) erzeugt den Report
+und stellt ihn über **GitHub Pages** bereit – einfach die URL öffnen, kein
+E-Mail-Versand und keine blockierbaren Links nötig.
+
+- **Aktualisierung:** täglich automatisch (cron), bei jedem `push` auf `main`, und on demand über **Actions → „Report-Website (GitHub Pages)" → Run workflow**.
+- Die Seite lädt sich alle 15 Minuten selbst neu, damit neue Stände ohne manuelles Neuladen erscheinen.
+- Kein SMTP/Secrets nötig.
+
+### Einmalige Einrichtung
+
+1. `Repo → Settings → Pages → Build and deployment → Source: **GitHub Actions**`.
+2. Workflow einmal laufen lassen (Push auf `main` oder **Run workflow**).
+3. Die veröffentlichte URL steht danach im Deploy-Schritt des Workflows und unter
+   `Settings → Pages` – typischerweise `https://<owner>.github.io/agent/`.
+
+Hinweis: GitHub Pages ist für öffentliche Repositories kostenlos; für private
+Repositories ist ggf. ein entsprechender GitHub-Plan nötig.
+
 ### Damit der Link funktioniert (Report hosten)
 
 Der Link in der Mail zeigt auf `email.public_base_url` + `report_filename`.
