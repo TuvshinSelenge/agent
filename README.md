@@ -40,7 +40,8 @@ Collector-Agenten (parallel)   ->   Analyst-Agent        ->   Enrichment-Agent  
 | Enrichment-Agent | `enrichment.py` | Ansprechpartner, Volumen, Potenzial, ELK-Relevanz, nächste Aktion |
 | Reporting-Agent | `report.py` | Report in Konsole, Markdown, HTML, JSON |
 | E-Mail-Agent | `emailer.py` | Formatiertes HTML-Mail mit Report-Link + HTML-Anhang |
-| Report-Server | `server.py` | Liefert `output/` aus, damit der Report-Link auflöst |
+| Web-UI (on demand) | `webapp.py` | Seite mit Buttons: „Jetzt aktualisieren" und „… & per E-Mail senden" |
+| Report-Server | `server.py` | Liefert `output/` als statische Website aus (für Report-Links) |
 | Scheduler | `scheduler.py` | Täglicher Lauf (Standard 06:00) |
 | Zustand | `state.py` | Dedup über Läufe hinweg (nur „neue" Projekte melden) |
 
@@ -128,6 +129,23 @@ Standardempfänger ist bereits hinterlegt.
 # Täglich um 06:00 erzeugen UND versenden
 .venv/bin/elk-agent schedule --at 06:00 --email
 ```
+
+### On-Demand (Web-UI mit Buttons)
+
+Für den Abruf „auf Knopfdruck" gibt es eine kleine Web-Oberfläche. Sie zeigt den
+aktuellen Report und bietet zwei Buttons:
+
+- **🔄 Jetzt aktualisieren** – führt sofort einen frischen Lauf aus und zeigt das Ergebnis.
+- **📧 Aktualisieren & per E-Mail senden** – führt einen frischen Lauf aus und schickt den Report **sofort** per E-Mail an die konfigurierten Empfänger.
+
+```bash
+.venv/bin/elk-agent web --port 8000
+# -> Browser öffnen: http://<host>:8000/  und Button klicken
+```
+
+In der Cloud-Agent-Umgebung läuft diese Web-UI automatisch als Terminal
+`lead-agent-web` auf Port `8000` – einfach die Seite öffnen und den Button
+klicken, um jederzeit den aktuellen Stand per Mail zu bekommen.
 
 ### Damit der Link funktioniert (Report hosten)
 

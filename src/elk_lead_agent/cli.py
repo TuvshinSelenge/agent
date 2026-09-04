@@ -71,6 +71,15 @@ def _build_parser() -> argparse.ArgumentParser:
     serve.add_argument("--host", default="0.0.0.0")
     serve.add_argument("--port", type=int, default=8000)
 
+    web = sub.add_parser(
+        "web",
+        help="Interaktive Web-UI mit Buttons zum Aktualisieren und On-Demand-Versand.",
+    )
+    web.add_argument("--host", default="0.0.0.0")
+    web.add_argument("--port", type=int, default=8000)
+    web.add_argument("--output-dir", default="output")
+    web.add_argument("--config", default=None)
+
     sub.add_parser("sources", help="Konfigurierte Quellen auflisten.")
     return parser
 
@@ -153,6 +162,18 @@ def _cmd_serve(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_web(args: argparse.Namespace) -> int:
+    from .webapp import run_web
+
+    run_web(
+        host=args.host,
+        port=args.port,
+        output_dir=args.output_dir,
+        config_path=args.config,
+    )
+    return 0
+
+
 def _cmd_sources(args: argparse.Namespace) -> int:
     from rich.table import Table
 
@@ -180,6 +201,8 @@ def main(argv: list[str] | None = None) -> int:
         return _cmd_schedule(args)
     if args.command == "serve":
         return _cmd_serve(args)
+    if args.command == "web":
+        return _cmd_web(args)
     if args.command == "sources":
         return _cmd_sources(args)
     parser.print_help()

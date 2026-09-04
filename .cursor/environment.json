@@ -7,8 +7,8 @@
       "command": ".venv/bin/elk-agent schedule --at 06:00 --email"
     },
     {
-      "name": "report-server",
-      "command": ".venv/bin/elk-agent serve --port 8000"
+      "name": "lead-agent-web",
+      "command": ".venv/bin/elk-agent web --port 8000"
     }
   ],
   "ports": [8000]
