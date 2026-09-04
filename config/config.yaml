@@ -4,6 +4,24 @@
 # A finding becomes a sales lead ("Lead für Vertrieb") at this score.
 threshold_lead: 60
 
+# --- E-Mail-Versand (Morgenreport) ------------------------------------------
+# SMTP-Zugangsdaten kommen aus Umgebungsvariablen / Secrets (NICHT hier ablegen):
+#   SMTP_HOST, SMTP_PORT (Standard 587), SMTP_USERNAME, SMTP_PASSWORD,
+#   SMTP_FROM (Absender), SMTP_STARTTLS (Standard true).
+email:
+  # Standard-Empfänger des Morgenreports.
+  recipients:
+    - "selenge.tuvshin.stud@elkkampa.com"
+  subject_prefix: "[ELK Lead Agent]"
+  # Öffentliche Basis-URL, unter der die HTML-Reports erreichbar sind. Wird für
+  # den "Report öffnen"-Link in der Mail verwendet. Beispiel:
+  #   https://reports.elkkampa.com/
+  # Leer lassen, wenn (noch) kein Hosting vorhanden ist – dann liegt der Report
+  # als Anhang bei und der Link zeigt auf die lokal ausgelieferte Datei.
+  public_base_url: ""
+  # Dateiname des Reports, auf den der Link zeigt (siehe runner.write_outputs).
+  report_filename: "report_latest.html"
+
 # Only projects published/updated within this window count as "new" in the morning report.
 window_hours: 24
 

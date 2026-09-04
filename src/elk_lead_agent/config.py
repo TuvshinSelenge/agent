@@ -27,6 +27,14 @@ class Category:
     keywords: tuple[str, ...]
 
 
+@dataclass(frozen=True)
+class EmailConfig:
+    recipients: tuple[str, ...] = ()
+    subject_prefix: str = "[ELK Lead Agent]"
+    public_base_url: str = ""
+    report_filename: str = "report_latest.html"
+
+
 @dataclass
 class Config:
     threshold_lead: int
@@ -39,6 +47,7 @@ class Config:
     timber_keywords: tuple[str, ...]
     submission_keywords: tuple[str, ...]
     developers: dict[str, str]
+    email: EmailConfig = field(default_factory=EmailConfig)
     sources: list[SourceConfig] = field(default_factory=list)
 
     @property
@@ -72,6 +81,14 @@ def load_config(path: str | Path | None = None) -> Config:
             )
         )
 
+    email_raw = raw.get("email", {}) or {}
+    email = EmailConfig(
+        recipients=tuple(email_raw.get("recipients", [])),
+        subject_prefix=email_raw.get("subject_prefix", "[ELK Lead Agent]"),
+        public_base_url=email_raw.get("public_base_url", "") or "",
+        report_filename=email_raw.get("report_filename", "report_latest.html"),
+    )
+
     return Config(
         threshold_lead=int(raw.get("threshold_lead", 60)),
         window_hours=int(raw.get("window_hours", 24)),
@@ -83,5 +100,6 @@ def load_config(path: str | Path | None = None) -> Config:
         timber_keywords=tuple(raw.get("timber_keywords", [])),
         submission_keywords=tuple(raw.get("submission_keywords", [])),
         developers=dict(raw.get("developers", {})),
+        email=email,
         sources=sources,
     )

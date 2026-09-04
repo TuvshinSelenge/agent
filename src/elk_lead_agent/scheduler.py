@@ -18,6 +18,8 @@ def run_daily(
     minute: int = 0,
     output_dir: str | Path = "output",
     config_path: str | Path | None = None,
+    email: bool = False,
+    to: str | None = None,
     on_run: Callable[[], None] | None = None,
 ) -> None:
     """Block and run the orchestrator every day at the given local time."""
@@ -29,6 +31,13 @@ def run_daily(
         report = orchestrator.run()
         render_console(report)
         write_outputs(report, output_dir)
+        if email:
+            from .emailer import EmailSettings, send_report_email
+
+            settings = EmailSettings.from_env()
+            if to:
+                settings.recipients = tuple(r.strip() for r in to.split(",") if r.strip())
+            send_report_email(report, orchestrator.config, settings=settings)
         if on_run:
             on_run()
 

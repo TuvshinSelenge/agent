@@ -39,6 +39,8 @@ Collector-Agenten (parallel)   ->   Analyst-Agent        ->   Enrichment-Agent  
 | Analyst-Agent | `scoring.py` | Kategorisierung + Bewertung nach dem Punkteschema |
 | Enrichment-Agent | `enrichment.py` | Ansprechpartner, Volumen, Potenzial, ELK-Relevanz, nächste Aktion |
 | Reporting-Agent | `report.py` | Report in Konsole, Markdown, HTML, JSON |
+| E-Mail-Agent | `emailer.py` | Formatiertes HTML-Mail mit Report-Link + HTML-Anhang |
+| Report-Server | `server.py` | Liefert `output/` aus, damit der Report-Link auflöst |
 | Scheduler | `scheduler.py` | Täglicher Lauf (Standard 06:00) |
 | Zustand | `state.py` | Dedup über Läufe hinweg (nur „neue" Projekte melden) |
 
@@ -94,6 +96,54 @@ bash scripts/setup.sh        # legt .venv an und installiert das Paket
 # Täglich um 06:00 laufen (blockierend)
 .venv/bin/elk-agent schedule --at 06:00
 ```
+
+## E-Mail-Versand
+
+Der Report kann automatisch per E-Mail verschickt werden. Die E-Mail ist selbst
+schön formatiert (Übersicht + Top-Leads), enthält einen **„HTML-Report öffnen"-Link**
+und den vollständigen HTML-Report als **Anhang** (Klick öffnet die formatierte Seite).
+
+SMTP-Zugangsdaten werden aus Umgebungsvariablen / Secrets gelesen (nie im Repo):
+
+| Variable | Bedeutung | Standard |
+| --- | --- | --- |
+| `SMTP_HOST` | SMTP-Server | – (erforderlich) |
+| `SMTP_PORT` | Port | `587` |
+| `SMTP_USERNAME` | Login-Benutzer | – |
+| `SMTP_PASSWORD` | Login-Passwort | – |
+| `SMTP_FROM` | Absenderadresse | `SMTP_USERNAME` |
+| `SMTP_STARTTLS` | STARTTLS verwenden | `true` |
+| `SMTP_TO` | Empfänger überschreiben (optional) | `config email.recipients` |
+
+Empfänger und Betreff-Präfix stehen in `config/config.yaml` (`email:`). Der
+Standardempfänger ist bereits hinterlegt.
+
+```bash
+# Report erzeugen und per E-Mail senden
+.venv/bin/elk-agent run --email
+
+# Empfänger ad hoc überschreiben
+.venv/bin/elk-agent run --email --to "name@firma.at"
+
+# Täglich um 06:00 erzeugen UND versenden
+.venv/bin/elk-agent schedule --at 06:00 --email
+```
+
+### Damit der Link funktioniert (Report hosten)
+
+Der Link in der Mail zeigt auf `email.public_base_url` + `report_filename`.
+Setze `public_base_url` in der Config (oder die Umgebungsvariable
+`REPORT_PUBLIC_URL`) auf die öffentliche Adresse, unter der die Reports liegen.
+
+Zum Ausliefern des `output/`-Verzeichnisses gibt es einen kleinen Server:
+
+```bash
+.venv/bin/elk-agent serve --port 8000
+# -> http://<host>:8000/report_latest.html
+```
+
+Ist keine `public_base_url` gesetzt, wird der vollständige Report als Anhang
+mitgeschickt (öffnet ebenfalls die formatierte Seite).
 
 Der Report enthält pro Projekt: **Projekt, Ort, Status, Score, Potenzial,
 ELK-Relevanz** sowie in den Lead-Details **Link zur Quelle, Ansprechpartner,
