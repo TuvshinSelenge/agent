@@ -64,6 +64,12 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Nur echte Netzwerkquellen nutzen (keine Fixtures) – alle Links sind real.",
     )
     run.add_argument(
+        "--agent",
+        action="store_true",
+        help="Recherche-Agent: liest echte Quellen und lässt ein LLM relevante "
+        "Projekte auswählen/extrahieren (benötigt OPENAI_API_KEY). Impliziert --live.",
+    )
+    run.add_argument(
         "--window-hours",
         type=int,
         default=None,
@@ -109,7 +115,17 @@ def _cmd_run(args: argparse.Namespace) -> int:
     config = load_config(args.config)
     if args.window_hours:
         config.window_hours = args.window_hours
-    orchestrator = Orchestrator(config=config, state=state, live_only=args.live)
+    if args.agent:
+        from .llm import LLMNotConfiguredError, OpenAIClient
+
+        try:
+            OpenAIClient()  # fail fast with a clear message if the key is missing
+        except LLMNotConfiguredError as exc:
+            console.print(f"[red]Agent-Modus nicht möglich:[/red] {exc}")
+            return 5
+    orchestrator = Orchestrator(
+        config=config, state=state, live_only=args.live, agent=args.agent
+    )
     # Do not persist "seen" yet: only mark leads seen after delivery succeeds,
     # so a write/e-mail failure never silently drops them from future runs.
     report = orchestrator.run(persist_state=False)
