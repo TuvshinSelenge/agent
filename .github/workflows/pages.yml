@@ -32,13 +32,39 @@ jobs:
       - name: Install
         run: pip install -e .
       - name: Report erzeugen und Seite vorbereiten
+        env:
+          # Link-Ziel des "Jetzt aktualisieren"-Buttons (Actions → Run workflow).
+          REPO: ${{ github.repository }}
         run: |
           elk-agent run --no-state
           mkdir -p _site
-          # index.html = aktueller Report; Auto-Reload alle 15 Minuten, damit
-          # neue Deployments ohne manuelles Neuladen sichtbar werden.
-          sed 's|<head>|<head>\n<meta http-equiv="refresh" content="900">|' \
-            output/report_latest.html > _site/index.html
+          # index.html = aktueller Report, ergänzt um:
+          #  - Auto-Reload alle 15 Min (damit neue Deployments sichtbar werden)
+          #  - eine Kopfleiste mit "Jetzt aktualisieren"-Button, der die
+          #    Workflow-Ausführung auf GitHub startet (sicher, ohne Token in der Seite)
+          python - "$REPO" <<'PY'
+          import sys
+          repo = sys.argv[1]
+          run_url = f"https://github.com/{repo}/actions/workflows/pages.yml"
+          html = open("output/report_latest.html", encoding="utf-8").read()
+          meta = '<meta http-equiv="refresh" content="900">'
+          html = html.replace("<head>", "<head>\n" + meta, 1)
+          banner = (
+              '<div style="position:sticky;top:0;z-index:1000;background:#0b5;color:#fff;'
+              'padding:10px 16px;display:flex;gap:12px;align-items:center;flex-wrap:wrap;'
+              'font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;">'
+              '<span style="font-weight:700;">ELK Lead Agent</span>'
+              f'<a href="{run_url}" target="_blank" rel="noopener" '
+              'style="background:#fff;color:#0b5;text-decoration:none;padding:7px 14px;'
+              'border-radius:6px;font-weight:600;">&#128260; Jetzt aktualisieren</a>'
+              '<span style="opacity:.9;font-size:13px;">&ouml;ffnet GitHub &rarr; '
+              '&bdquo;Run workflow&ldquo;; danach l&auml;dt sich die Seite automatisch neu</span>'
+              '</div>'
+          )
+          html = html.replace("<body>", "<body>\n" + banner, 1)
+          open("_site/index.html", "w", encoding="utf-8").write(html)
+          print("index.html mit Banner + Auto-Reload erzeugt")
+          PY
           cp output/report_latest.json _site/report.json 2>/dev/null || true
       - uses: actions/upload-pages-artifact@v3
         with:
