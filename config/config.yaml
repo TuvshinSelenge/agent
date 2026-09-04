@@ -181,7 +181,8 @@ developers:
 sources:
   - { name: "ANKÖ",                 type: tender,    enabled: true,  live: false }
   - { name: "Auftrag.at",           type: tender,    enabled: true,  live: false }
-  - { name: "TED (EU)",             type: tender,    enabled: true,  live: false }
+  # TED has a public API -> real EU tender notices with working ted.europa.eu links.
+  - { name: "TED (EU)",             type: tender,    enabled: true,  live: true }
   - { name: "Bundesbeschaffung",    type: tender,    enabled: true,  live: false }
   - { name: "Landesvergabeportale", type: tender,    enabled: true,  live: false }
   - { name: "Amtsblätter",          type: zoning,    enabled: true,  live: false }
@@ -197,6 +198,8 @@ sources:
   - { name: "Tourismusverbände",    type: hotel,     enabled: true,  live: false }
   - { name: "Wirtschaftskammer",    type: hotel,     enabled: true,  live: false }
   - { name: "Immobilien Magazin",   type: press,     enabled: true,  live: false }
-  - { name: "Der Standard Immobilien", type: press,  enabled: true,  live: false }
+  # Der Standard Immobilien publishes an RSS feed -> real article links.
+  - { name: "Der Standard Immobilien", type: press,  enabled: true,  live: true,
+      feed: "https://www.derstandard.at/rss/immobilien" }
   - { name: "Leadersnet",           type: press,     enabled: true,  live: false }
   - { name: "Kommunalnet",          type: press,     enabled: true,  live: false }

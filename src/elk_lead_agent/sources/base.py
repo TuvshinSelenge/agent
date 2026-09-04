@@ -26,7 +26,18 @@ class SourceAgent(ABC):
     def name(self) -> str:
         return self.source.name
 
-    def collect(self) -> list[RawFinding]:
+    def collect(self, live_only: bool = False) -> list[RawFinding]:
+        """Collect findings.
+
+        ``live_only=True`` returns only real, network-sourced findings (so every
+        link resolves) and never falls back to fixtures — sources without a live
+        implementation simply contribute nothing.
+        """
+        if live_only:
+            try:
+                return self.fetch_live()
+            except Exception:  # noqa: BLE001 - a broken source must not sink the run
+                return []
         if self.source.live:
             try:
                 findings = self.fetch_live()

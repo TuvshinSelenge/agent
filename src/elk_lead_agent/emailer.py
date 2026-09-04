@@ -26,7 +26,7 @@ from jinja2 import Environment
 
 from .config import Config
 from .models import Potential, RunReport
-from .report import _fmt_dt, _volume_label, to_html
+from .report import _fmt_dt, _volume_label, to_html, window_label
 
 
 class EmailNotConfiguredError(RuntimeError):
@@ -89,7 +89,7 @@ _EMAIL_TEMPLATE = _JINJA.from_string(
   <div style="background:#0b5;color:#fff;padding:18px 22px;border-radius:8px 8px 0 0;">
     <h1 style="margin:0;font-size:20px;">ELK Lead Agent · Morgenreport</h1>
     <div style="opacity:.9;font-size:13px;margin-top:4px;">
-      Neue Projekte der letzten {{ r.window_hours }} Stunden · Stand {{ generated }}
+      Neue Projekte der letzten {{ window }} · Stand {{ generated }}
     </div>
   </div>
   <div style="border:1px solid #e2e2e2;border-top:none;padding:22px;border-radius:0 0 8px 8px;">
@@ -185,13 +185,14 @@ def render_email_html(report: RunReport, config: Config) -> str:
         link=_report_link(config),
         badge=_badge_style,
         volume=_volume_label,
+        window=window_label(report.window_hours),
     )
 
 
 def _plain_text(report: RunReport, config: Config) -> str:
     lines = [
         "ELK Lead Agent - Morgenreport",
-        f"Neue Projekte der letzten {report.window_hours} Stunden (Stand {_fmt_dt(report.generated_at)})",
+        f"Neue Projekte der letzten {window_label(report.window_hours)} (Stand {_fmt_dt(report.generated_at)})",
         f"{len(report.projects)} Projekte, {len(report.leads)} Leads (ab {report.threshold_lead} Punkten).",
         "",
     ]

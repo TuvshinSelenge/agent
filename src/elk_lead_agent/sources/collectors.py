@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
+import feedparser
 import httpx
 
 from ..config import Config, SourceConfig
@@ -17,7 +18,9 @@ from .base import SourceAgent
 from .fixtures import FixtureProvider
 
 TED_API_URL = "https://api.ted.europa.eu/v3/notices/search"
-TED_TIMEOUT_S = 8.0
+TED_TIMEOUT_S = 15.0
+HTTP_TIMEOUT_S = 15.0
+_USER_AGENT = "ELK-Lead-Agent/0.1 (+https://github.com/TuvshinSelenge/agent)"
 
 
 class TenderAgent(SourceAgent):
@@ -30,32 +33,37 @@ class TenderAgent(SourceAgent):
 
     def _fetch_ted(self) -> list[RawFinding]:
         # TED expert search: Austria + our free-text search terms.
-        terms = " OR ".join(f'"{t}"' for t in self.config.search_terms[:8])
-        query = f"(FT=({terms})) AND (CY=AUT)"
+        terms = " OR ".join(f'"{t}"' for t in self.config.search_terms)
+        query = f"CY=AUT AND FT=({terms})"
         payload = {
             "query": query,
-            "fields": ["ND", "TI", "PD", "TW", "RC"],
-            "limit": 25,
+            "fields": ["ND", "TI", "PD", "links", "place-of-performance"],
+            "limit": 50,
+            "scope": "ALL",
         }
-        with httpx.Client(timeout=TED_TIMEOUT_S) as client:
+        headers = {"User-Agent": _USER_AGENT}
+        with httpx.Client(timeout=TED_TIMEOUT_S, headers=headers) as client:
             resp = client.post(TED_API_URL, json=payload)
             resp.raise_for_status()
             data = resp.json()
+
         findings: list[RawFinding] = []
         for notice in data.get("notices", []):
-            title = _first(notice.get("TI")) or "TED-Ausschreibung"
-            published = _parse_ted_date(_first(notice.get("PD")))
+            nd = notice.get("publication-number") or notice.get("ND")
+            title = _pick_lang(notice.get("TI")) or "TED-Ausschreibung"
+            url = _ted_link(notice.get("links"), nd)
+            if not url:
+                continue
             kwargs = {
                 "source_name": self.source.name,
                 "source_type": SourceType.TENDER,
                 "title": title,
-                "description": _first(notice.get("TW")) or "",
-                "location": _first(notice.get("TW")) or "Österreich",
+                "description": title,
+                "location": _ted_location(notice.get("place-of-performance")),
                 "status": "EU-Ausschreibung",
-                "url": f"https://ted.europa.eu/udl?uri=TED:NOTICE:{_first(notice.get('ND'))}",
+                "url": url,
             }
-            # Only override the default (fetch time) when a real date is available,
-            # so the 24h window does not treat old notices as freshly published.
+            published = _parse_ted_date(notice.get("PD"))
             if published is not None:
                 kwargs["published_at"] = published
             findings.append(RawFinding(**kwargs))
@@ -84,10 +92,36 @@ class HotelAgent(SourceAgent):
 
 
 class PressAgent(SourceAgent):
-    """Presse & Fachportale (Immobilien Magazin, Der Standard, Leadersnet, ...)."""
+    """Presse & Fachportale – liest echte Artikel aus dem konfigurierten RSS-Feed."""
 
     def fetch_live(self) -> list[RawFinding]:
-        return []
+        feed_url = self.source.feed
+        if not feed_url:
+            return []
+        resp = httpx.get(feed_url, timeout=HTTP_TIMEOUT_S, headers={"User-Agent": _USER_AGENT})
+        resp.raise_for_status()
+        parsed = feedparser.parse(resp.content)
+        findings: list[RawFinding] = []
+        for entry in parsed.entries:
+            link = getattr(entry, "link", None)
+            title = getattr(entry, "title", None)
+            if not link or not title:
+                continue
+            summary = getattr(entry, "summary", "") or ""
+            kwargs = {
+                "source_name": self.source.name,
+                "source_type": SourceType.PRESS,
+                "title": title,
+                "description": summary,
+                "location": "Österreich",
+                "status": "Fachartikel",
+                "url": link,
+            }
+            published = _parse_feed_date(entry)
+            if published is not None:
+                kwargs["published_at"] = published
+            findings.append(RawFinding(**kwargs))
+        return findings
 
 
 _AGENT_BY_TYPE: dict[SourceType, type[SourceAgent]] = {
@@ -111,34 +145,64 @@ def build_agents(config: Config, fixtures: FixtureProvider) -> list[SourceAgent]
 
 
 def _parse_ted_date(value) -> datetime | None:
-    """Parse a TED publication date (``PD``) into an aware UTC datetime.
-
-    TED publishes dates as ``YYYYMMDD`` or ISO-8601; return None on anything else.
-    """
+    """Parse a TED publication date (``PD``) like ``2026-09-04+02:00`` (aware UTC)."""
     if not value:
         return None
-    text = str(value).strip()
-    for fmt in ("%Y%m%d", "%Y-%m-%d"):
+    text = str(value).strip()[:10]  # keep the date portion, drop any tz offset
+    for fmt in ("%Y-%m-%d", "%Y%m%d"):
         try:
             return datetime.strptime(text, fmt).replace(tzinfo=UTC)
         except ValueError:
             continue
-    try:
-        dt = datetime.fromisoformat(text)
-        return dt if dt.tzinfo else dt.replace(tzinfo=UTC)
-    except ValueError:
-        return None
+    return None
 
 
-def _first(value):
-    """TED fields are often lists/dicts; return a plain string best-effort."""
-    if value is None:
-        return None
-    if isinstance(value, list):
-        return _first(value[0]) if value else None
-    if isinstance(value, dict):
-        for key in ("value", "text", "#text"):
-            if key in value:
-                return str(value[key])
-        return None
-    return str(value)
+def _pick_lang(titles) -> str | None:
+    """TED titles come as a {lang: text} dict; prefer German, then English."""
+    if isinstance(titles, str):
+        return titles
+    if isinstance(titles, dict):
+        for key in ("deu", "ger", "eng"):
+            if titles.get(key):
+                return str(titles[key])
+        for v in titles.values():
+            if v:
+                return str(v)
+    return None
+
+
+def _ted_link(links, nd) -> str | None:
+    """Return a real, working ted.europa.eu URL for the notice."""
+    if isinstance(links, dict):
+        pdf = links.get("pdf") or {}
+        for key in ("DEU", "ENG"):
+            if pdf.get(key):
+                return str(pdf[key])
+        if isinstance(pdf, dict) and pdf:
+            return str(next(iter(pdf.values())))
+        xml = links.get("xml") or {}
+        if isinstance(xml, dict) and xml:
+            return str(next(iter(xml.values())))
+    if nd:
+        return f"https://ted.europa.eu/de/notice/{nd}"
+    return None
+
+
+def _ted_location(pop) -> str:
+    if isinstance(pop, list) and pop:
+        return "Österreich" if "AUT" in pop else str(pop[0])
+    return "Österreich"
+
+
+def _parse_feed_date(entry) -> datetime | None:
+    """Convert a feedparser entry's parsed date to an aware UTC datetime.
+
+    feedparser's ``*_parsed`` struct_time is in UTC, so use ``calendar.timegm``.
+    """
+    import calendar
+
+    for attr in ("published_parsed", "updated_parsed"):
+        st = getattr(entry, attr, None)
+        if st:
+            return datetime.fromtimestamp(calendar.timegm(st), tz=UTC)
+    return None
