@@ -1,0 +1,15 @@
+{
+  "name": "ELK Lead Agent",
+  "install": "bash scripts/setup.sh",
+  "terminals": [
+    {
+      "name": "lead-agent-scheduler",
+      "command": ".venv/bin/elk-agent schedule --at 06:00 --email"
+    },
+    {
+      "name": "lead-agent-web",
+      "command": ".venv/bin/elk-agent web --port 8000"
+    }
+  ],
+  "ports": [8000]
+}

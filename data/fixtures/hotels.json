@@ -1,0 +1,25 @@
+[
+  {
+    "source": "Tourismusverbände",
+    "type": "hotel",
+    "title": "Neues Budgethotel / Motel an der A1",
+    "description": "Projektidee für ein Budgethotel mit Motel-Charakter an der Westautobahn.",
+    "location": "Ansfelden, Oberösterreich",
+    "status": "Projektidee",
+    "url": "https://www.oberoesterreich-tourismus.at/projekt/budgethotel-a1",
+    "hours_ago": 16,
+    "volume_eur": 7000000
+  },
+  {
+    "source": "Wirtschaftskammer",
+    "type": "hotel",
+    "title": "Apartmenthotel mit Mitarbeiterunterkunft (serielles Bauen)",
+    "description": "Apartmenthotel kombiniert mit Mitarbeiterunterkunft, serielles Bauen geplant, Einreichung steht bevor.",
+    "location": "Dornbirn, Vorarlberg",
+    "status": "Vor Einreichung",
+    "url": "https://www.wko.at/vlbg/projekt/apartmenthotel-dornbirn",
+    "hours_ago": 7,
+    "volume_eur": 9500000,
+    "investor": "ARE"
+  }
+]

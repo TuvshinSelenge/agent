@@ -1,0 +1,34 @@
+[
+  {
+    "source": "UBM",
+    "type": "developer",
+    "title": "UBM plant Serviced Apartments in Modulbauweise",
+    "description": "UBM Development kündigt ein Serviced-Apartment-Projekt in Modulbauweise an.",
+    "location": "Wien",
+    "status": "In Planung",
+    "url": "https://www.ubm-development.com/news/serviced-apartments-modulbau",
+    "hours_ago": 4,
+    "volume_eur": 15000000
+  },
+  {
+    "source": "Buwog",
+    "type": "developer",
+    "title": "BUWOG startet Verkauf von Eigentumswohnungen",
+    "description": "Freifinanzierte Eigentumswohnungen im gehobenen Segment für Eigennutzer.",
+    "location": "Wien",
+    "status": "In Vermarktung",
+    "url": "https://www.buwog.com/news/eigentumswohnungen-verkaufsstart",
+    "hours_ago": 9
+  },
+  {
+    "source": "Soravia",
+    "type": "developer",
+    "title": "Soravia entwickelt Mitarbeiterwohnhaus für Klinik (Holzbau)",
+    "description": "Soravia realisiert ein Mitarbeiterwohnhaus in Holzbauweise, Einreichung steht bevor.",
+    "location": "Villach, Kärnten",
+    "status": "Vor Einreichung",
+    "url": "https://www.soravia.at/projekte/mitarbeiterwohnhaus-villach",
+    "hours_ago": 2,
+    "volume_eur": 5000000
+  }
+]

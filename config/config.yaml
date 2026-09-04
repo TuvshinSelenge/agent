@@ -1,0 +1,202 @@
+# Configuration for the ELK Lead Agent orchestrator.
+# All user-facing labels are intentionally German to match the target market (Austria).
+
+# A finding becomes a sales lead ("Lead für Vertrieb") at this score.
+threshold_lead: 60
+
+# --- E-Mail-Versand (Morgenreport) ------------------------------------------
+# SMTP-Zugangsdaten kommen aus Umgebungsvariablen / Secrets (NICHT hier ablegen):
+#   SMTP_HOST, SMTP_PORT (Standard 587), SMTP_USERNAME, SMTP_PASSWORD,
+#   SMTP_FROM (Absender), SMTP_STARTTLS (Standard true).
+email:
+  # Standard-Empfänger des Morgenreports.
+  recipients:
+    - "selenge.tuvshin.stud@elkkampa.com"
+  subject_prefix: "[ELK Lead Agent]"
+  # Öffentliche Basis-URL, unter der die HTML-Reports erreichbar sind. Wird für
+  # den "Report öffnen"-Link in der Mail verwendet. Beispiel:
+  #   https://reports.elkkampa.com/
+  # Leer lassen, wenn (noch) kein Hosting vorhanden ist – dann liegt der Report
+  # als Anhang bei und der Link zeigt auf die lokal ausgelieferte Datei.
+  public_base_url: ""
+  # Dateiname des Reports, auf den der Link zeigt (siehe runner.write_outputs).
+  report_filename: "report_latest.html"
+
+# Only projects published/updated within this window count as "new" in the morning report.
+window_hours: 24
+
+# --- Scoring rules (Bewertungssystem) ---------------------------------------
+# Points map 1:1 to the brief.
+scoring:
+  volume_threshold_eur: 2000000   # Projektvolumen > 2 Mio. EUR
+  points:
+    volume_over_threshold: 20     # Projektvolumen > 2 Mio. EUR  -> +20
+    timber_or_modular: 30         # Holz- oder Modulbau erwaehnt -> +30
+    submission_imminent: 20       # Einreichung steht bevor      -> +20
+    investor_known: 10            # Investor bekannt             -> +10
+    hotel_or_employee_housing: 20 # Hotel / Mitarbeiterquartier  -> +20
+
+# Categories that trigger the "Hotel / Mitarbeiterquartier" bonus.
+hotel_or_employee_categories:
+  - budget_hotels
+  - mitarbeiterquartiere
+  - arbeiterunterkuenfte
+
+# --- Target project categories (Kategorien) ---------------------------------
+categories:
+  mitarbeiterquartiere:
+    label: "Mitarbeiterquartiere"
+    keywords:
+      - "Mitarbeiterquartier"
+      - "Mitarbeiterwohnhaus"
+      - "Personalhaus"
+      - "Personalunterkunft"
+      - "Personalunterkünfte"
+      - "Mitarbeiterunterkunft"
+      - "Mitarbeiterunterkünfte"
+      - "Unterkunft für Mitarbeiter"
+      - "Mitarbeiterwohnen"
+  wohnen_auf_zeit:
+    label: "Wohnen auf Zeit / Boarding Houses"
+    keywords:
+      - "Wohnen auf Zeit"
+      - "Boarding House"
+      - "Boardinghouse"
+      - "temporäres Wohnen"
+      - "Longstay"
+      - "Micro-Living"
+      - "Mikroapartment"
+  serviced_apartments:
+    label: "Serviced Apartments"
+    keywords:
+      - "Serviced Apartment"
+      - "Serviced Apartments"
+      - "Aparthotel"
+      - "Apartmenthotel"
+  budget_hotels:
+    label: "Budget-Hotels"
+    keywords:
+      - "Budgethotel"
+      - "Budget-Hotel"
+      - "Motel"
+      - "Low-Budget-Hotel"
+      - "Economy Hotel"
+      - "Beherbergungsbetrieb"
+      - "Hotelvorhaben"
+      - "Hostel"
+  arbeiterunterkuenfte:
+    label: "Arbeiterunterkünfte"
+    keywords:
+      - "Arbeiterquartier"
+      - "Arbeiterunterkunft"
+      - "Arbeiterunterkünfte"
+      - "Arbeiterwohnheim"
+      - "Bauarbeiterunterkunft"
+  studentenheime:
+    label: "Studentenheime"
+    keywords:
+      - "Studentenheim"
+      - "Studentenwohnheim"
+      - "Studierendenheim"
+      - "Student Housing"
+      - "Studentenwohnen"
+  pflege_sozialwohnen:
+    label: "Pflege- und Sozialwohnen mit temporärem Charakter"
+    keywords:
+      - "Pflegewohnhaus"
+      - "betreutes Wohnen"
+      - "Sozialwohnen"
+      - "Übergangswohnen"
+      - "Notunterkunft"
+      - "temporäres Sozialwohnen"
+  gewerbliche_wohnanlagen:
+    label: "Gewerbliche Wohnanlagen für Mitarbeiter"
+    keywords:
+      - "gewerbliche Wohnanlage"
+      - "Wohnanlage für Mitarbeiter"
+      - "Betriebswohnungen"
+      - "Werkswohnungen"
+      - "Firmenwohnungen"
+
+# Extra free-text search terms from the brief (Suchbegriffe). Used as an
+# additional relevance signal on top of the category keywords above.
+search_terms:
+  - "Mitarbeiterquartier"
+  - "Mitarbeiterwohnhaus"
+  - "Personalhaus"
+  - "Arbeiterquartier"
+  - "Boarding House"
+  - "Serviced Apartments"
+  - "Wohnheim"
+  - "Apartmenthotel"
+  - "Budgethotel"
+  - "Motel"
+  - "Beherbergungsbetrieb"
+  - "Wohnen auf Zeit"
+  - "Unterkunft für Mitarbeiter"
+  - "Mitarbeiterunterkunft"
+
+# Keywords that indicate timber / modular construction (core ELK relevance).
+timber_keywords:
+  - "Holzbau"
+  - "Holzmodulbau"
+  - "Modulbau"
+  - "Modulbauweise"
+  - "modular"
+  - "Holz-Modul"
+  - "Holzriegelbau"
+  - "Massivholz"
+  - "Brettsperrholz"
+  - "CLT"
+  - "Holzhybrid"
+  - "serielles Bauen"
+  - "Vorfertigung"
+  - "vorgefertigt"
+  - "Fertigteil"
+
+# Keywords that indicate an imminent submission (Einreichung steht bevor).
+submission_keywords:
+  - "vor Einreichung"
+  - "Einreichung steht bevor"
+  - "kurz vor Einreichung"
+  - "Baueinreichung"
+  - "Einreichplanung"
+  - "Bauverhandlung"
+  - "Einreichung geplant"
+
+# Known investors / developers -> public, company-level contact used for enrichment.
+developers:
+  UBM: "UBM Development AG – Investor Relations"
+  ARE: "ARE Austrian Real Estate GmbH – Projektentwicklung"
+  Soravia: "Soravia Group – Projektentwicklung"
+  Haring: "Haring Group – Projektentwicklung"
+  Buwog: "BUWOG Group GmbH – Development"
+  "Value One": "Value One Holding AG – Development"
+  Signa: "Signa-Projektnachfolger – Asset Management"
+
+# --- Sources (Öffentliche Quellen) ------------------------------------------
+# type: tender | zoning | developer | hotel | press
+# live:  when true the collector attempts a real network fetch; otherwise it
+#        uses bundled fixtures so the pipeline runs deterministically offline.
+sources:
+  - { name: "ANKÖ",                 type: tender,    enabled: true,  live: false }
+  - { name: "Auftrag.at",           type: tender,    enabled: true,  live: false }
+  - { name: "TED (EU)",             type: tender,    enabled: true,  live: false }
+  - { name: "Bundesbeschaffung",    type: tender,    enabled: true,  live: false }
+  - { name: "Landesvergabeportale", type: tender,    enabled: true,  live: false }
+  - { name: "Amtsblätter",          type: zoning,    enabled: true,  live: false }
+  - { name: "Gemeinde-Kundmachungen", type: zoning,  enabled: true,  live: false }
+  - { name: "Bauverhandlungen",     type: zoning,    enabled: true,  live: false }
+  - { name: "Flächenwidmung",       type: zoning,    enabled: true,  live: false }
+  - { name: "UVP-Verfahren",        type: zoning,    enabled: true,  live: false }
+  - { name: "UBM",                  type: developer, enabled: true,  live: false }
+  - { name: "ARE",                  type: developer, enabled: true,  live: false }
+  - { name: "Soravia",              type: developer, enabled: true,  live: false }
+  - { name: "Buwog",                type: developer, enabled: true,  live: false }
+  - { name: "Value One",            type: developer, enabled: true,  live: false }
+  - { name: "Tourismusverbände",    type: hotel,     enabled: true,  live: false }
+  - { name: "Wirtschaftskammer",    type: hotel,     enabled: true,  live: false }
+  - { name: "Immobilien Magazin",   type: press,     enabled: true,  live: false }
+  - { name: "Der Standard Immobilien", type: press,  enabled: true,  live: false }
+  - { name: "Leadersnet",           type: press,     enabled: true,  live: false }
+  - { name: "Kommunalnet",          type: press,     enabled: true,  live: false }

@@ -1,0 +1,56 @@
+[
+  {
+    "source": "Flächenwidmung",
+    "type": "zoning",
+    "title": "Flächenwidmungsänderung für Serviced Apartments am Hauptbahnhof",
+    "description": "Umwidmung für ein Serviced-Apartment-Projekt, geplant in Holzbauweise. Bauverhandlung angesetzt.",
+    "location": "Linz, Oberösterreich",
+    "status": "Widmungsverfahren",
+    "url": "https://www.linz.at/amtsblatt/widmung-serviced-apartments-hbf",
+    "hours_ago": 12
+  },
+  {
+    "source": "UVP-Verfahren",
+    "type": "zoning",
+    "title": "UVP Wohnanlage für Mitarbeiter (Werkswohnungen)",
+    "description": "Umweltverträglichkeitsprüfung für eine gewerbliche Wohnanlage mit Werkswohnungen.",
+    "location": "Leoben, Steiermark",
+    "status": "UVP eingeleitet",
+    "url": "https://www.uvp.gv.at/verfahren/werkswohnungen-leoben",
+    "hours_ago": 18,
+    "volume_eur": 12000000
+  },
+  {
+    "source": "Bauverhandlungen",
+    "type": "zoning",
+    "title": "Bauverhandlung Boarding House / Wohnen auf Zeit (Holzhybrid)",
+    "description": "Boarding House mit Wohnen-auf-Zeit-Konzept in Holzhybridbauweise.",
+    "location": "Wien",
+    "status": "Bauverhandlung",
+    "url": "https://www.wien.gv.at/amtsblatt/boarding-house-holzhybrid-2026",
+    "hours_ago": 5,
+    "volume_eur": 6500000,
+    "investor": "Value One"
+  },
+  {
+    "source": "Amtsblätter",
+    "type": "zoning",
+    "title": "Kundmachung: Umbau Bürohaus zu Verwaltungszentrum",
+    "description": "Umbau eines Bürohauses. Kein Wohn- oder Beherbergungsprojekt.",
+    "location": "Wien",
+    "status": "Kundmachung",
+    "url": "https://www.wien.gv.at/amtsblatt/umbau-buerohaus",
+    "hours_ago": 10
+  },
+  {
+    "source": "Gemeinde-Kundmachungen",
+    "type": "zoning",
+    "title": "Pflegewohnhaus mit Übergangswohnen",
+    "description": "Kundmachung zur Errichtung eines Pflegewohnhauses mit temporärem Übergangswohnen.",
+    "location": "St. Pölten, Niederösterreich",
+    "status": "Kundmachung",
+    "url": "https://www.st-poelten.at/kundmachung/pflegewohnhaus-uebergang",
+    "hours_ago": 14,
+    "volume_eur": 3000000
+  }
+]
