@@ -35,8 +35,16 @@ jobs:
         env:
           # Link-Ziel des "Jetzt aktualisieren"-Buttons (Actions → Run workflow).
           REPO: ${{ github.repository }}
+          # LLM-Recherche-Agent: liest echte Quellen und wählt relevante Projekte
+          # (echte Links). Ohne Key fällt der Lauf automatisch auf --live zurück.
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: |
-          elk-agent run --no-state
+          if [ -n "$OPENAI_API_KEY" ]; then
+            elk-agent run --no-state --agent --window-hours 720
+          else
+            echo "Kein OPENAI_API_KEY -> deterministischer Live-Modus (nur echte Feeds)."
+            elk-agent run --no-state --live --window-hours 720
+          fi
           mkdir -p _site
           # index.html = aktueller Report, ergänzt um:
           #  - Auto-Reload alle 15 Min (damit neue Deployments sichtbar werden)
