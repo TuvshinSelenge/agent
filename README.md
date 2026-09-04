@@ -147,6 +147,35 @@ In der Cloud-Agent-Umgebung läuft diese Web-UI automatisch als Terminal
 `lead-agent-web` auf Port `8000` – einfach die Seite öffnen und den Button
 klicken, um jederzeit den aktuellen Stand per Mail zu bekommen.
 
+## Zuverlässiger täglicher Versand (GitHub Actions)
+
+> **Wichtig:** Der Scheduler/Web-Terminal in `.cursor/environment.json` läuft nur,
+> **solange ein Cloud Agent aktiv ist**. Für einen verlässlichen täglichen Versand
+> (unabhängig von einem laufenden Agent) gibt es einen GitHub-Actions-Workflow:
+> [`.github/workflows/daily-report.yml`](.github/workflows/daily-report.yml).
+
+- **Täglich automatisch:** per `schedule` (cron, Standard 04:00 UTC ≈ 06:00 Wien).
+- **Auf Knopfdruck:** über **Actions → „Täglicher Lead-Report" → Run workflow** (auch ohne laufenden Agent).
+
+### Einmalige Einrichtung – Secrets in GitHub hinterlegen
+
+Die Cursor-Secrets gelten nur für Cloud Agents. Für GitHub Actions müssen die
+SMTP-Zugangsdaten zusätzlich als **GitHub Repository Secrets** hinterlegt werden:
+
+`Repo → Settings → Secrets and variables → Actions → New repository secret`
+
+| Secret | erforderlich | Beispiel |
+| --- | --- | --- |
+| `SMTP_HOST` | ja | `smtp-relay.brevo.com` |
+| `SMTP_USERNAME` | ja | `b7dbfe001@smtp-brevo.com` |
+| `SMTP_PASSWORD` | ja | (Brevo SMTP-Key) |
+| `SMTP_FROM` | empfohlen | `selenge.tuvshin.stud@elkkampa.com` |
+| `SMTP_PORT` | optional | `587` |
+| `SMTP_STARTTLS` | optional | `true` |
+| `SMTP_TO` | optional | Empfänger überschreiben |
+
+Danach kann der Workflow unter **Actions** manuell getestet werden.
+
 ### Damit der Link funktioniert (Report hosten)
 
 Der Link in der Mail zeigt auf `email.public_base_url` + `report_filename`.
